@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 function QuestionForm(props) {
   const [formData, setFormData] = useState({
@@ -19,8 +19,38 @@ function QuestionForm(props) {
 
   function handleSubmit(event) {
     event.preventDefault();
-    console.log(formData);
+    const payload = {
+      prompt: formData.prompt,
+      answers: [formData.answer1, formData.answer2, formData.answer3, formData.answer4],
+      correctIndex: parseInt(formData.correctIndex, 10) || 0,
+    };
+
+    fetch("http://localhost:4000/questions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }).then(() => {
+      // clear form after submit only if still mounted
+      if (isMounted.current) {
+        setFormData({
+          prompt: "",
+          answer1: "",
+          answer2: "",
+          answer3: "",
+          answer4: "",
+          correctIndex: 0,
+        });
+      }
+    });
   }
+
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   return (
     <section>
@@ -73,15 +103,11 @@ function QuestionForm(props) {
         </label>
         <label>
           Correct Answer:
-          <select
-            name="correctIndex"
-            value={formData.correctIndex}
-            onChange={handleChange}
-          >
-            <option value="0">{formData.answer1}</option>
-            <option value="1">{formData.answer2}</option>
-            <option value="2">{formData.answer3}</option>
-            <option value="3">{formData.answer4}</option>
+          <select name="correctIndex" value={formData.correctIndex} onChange={handleChange}>
+            <option value="0">{formData.answer1 || "choice 1"}</option>
+            <option value="1">{formData.answer2 || "choice 2"}</option>
+            <option value="2">{formData.answer3 || "choice 3"}</option>
+            <option value="3">{formData.answer4 || "choice 4"}</option>
           </select>
         </label>
         <button type="submit">Add Question</button>
